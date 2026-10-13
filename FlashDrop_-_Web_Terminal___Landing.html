@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="it" class="scroll-smooth bg-black text-white antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FlashDrop • Dividi e Salda con AirDrop in 1 Secondo</title>
+  <meta name="description" content="Il modo più veloce per scambiare denaro e dividere il conto tra amici tramite AirDrop, NFC o QR. Zero app da scaricare per chi paga.">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #050507;
+      color: #ffffff;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Ambient Mesh Gradient */
+    .hero-glow {
+      background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.28) 0%, rgba(147, 51, 234, 0.14) 30%, rgba(5, 5, 7, 0) 70%),
+                  radial-gradient(circle at 80% 60%, rgba(16, 185, 129, 0.12) 0%, rgba(5, 5, 7, 0) 50%);
+    }
+
+    /* Glassmorphism */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card-interactive {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Shimmer swipe text */
+    @keyframes trackShimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .swipe-text-shimmer {
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 255, 255, 0.35) 100%);
+      background-size: 200% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: trackShimmer 2.2s infinite linear;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="selection:bg-blue-600 selection:text-white">
+
+  <!-- ==================== HEADER / NAVBAR ==================== -->
+  <header class="fixed top-0 left-0 right-0 z-40 bg-[#050507]/80 backdrop-blur-xl border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+          <i class="fa-solid fa-tower-broadcast text-xs"></i>
+        </div>
+        <span class="font-extrabold text-base tracking-tight text-white font-mono">FlashDrop<span class="text-blue-500">.</span></span>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <nav class="hidden md:flex items-center gap-8 text-xs font-mono text-zinc-400">
+        <a href="#terminalSection" class="hover:text-white transition">Terminale Pay</a>
+        <a href="#come-funziona" class="hover:text-white transition">Come Funziona</a>
+        <a href="#connetti-conto" class="hover:text-white transition">Connetti Conto</a>
+        <a href="#vantaggi" class="hover:text-white transition">Vantaggi</a>
+      </nav>
+
+      <!-- Account / Action Button -->
+      <div class="flex items-center gap-2">
+        <button id="openAccountDrawerBtn" class="flex items-center gap-2 px-3 py-1.5 rounded-full glass-card hover:border-blue-500/50 text-xs font-mono text-zinc-300 hover:text-white transition active:scale-95">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="navProfileNameDisplay">Il Tuo Conto</span>
+          <i class="fa-solid fa-gear text-[10px] text-zinc-400"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==================== HERO & INTERACTIVE TERMINAL ==================== -->
+  <main class="pt-24 pb-16 px-4 hero-glow min-h-screen flex flex-col justify-center">
+    
+    <!-- BANNER DINAMICO: SE APERTO TRAMITE LINK AIRDROP DA UN AMICO -->
+    <div id="incomingRequestBanner" class="max-w-xl mx-auto w-full mb-6 hidden">
+      <div class="p-4 rounded-3xl bg-blue-950/40 border border-blue-500/40 backdrop-blur-xl flex items-center justify-between shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-base">
+            <i class="fa-solid fa-bell animate-bounce"></i>
+          </div>
+          <div>
+            <div class="text-[10px] font-mono uppercase tracking-wider text-blue-400 font-bold">Richiesta Ricevuta da AirDrop</div>
+            <div class="text-sm font-bold text-white"><span id="bannerSenderName">Un amico</span> ti chiede <span class="text-emerald-400 font-mono" id="bannerAmount">€15.00</span></div>
+          </div>
+        </div>
+        <button id="jumpToPayBtn" class="px-3.5 py-1.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase font-mono hover:bg-zinc-200 active:scale-95 transition">
+          Salda Ora
+        </button>
+      </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      
+      <!-- HERO COPYWRITING -->
+      <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-card border-blue-500/30 text-blue-400 text-xs font-mono">
+          <i class="fa-solid fa-bolt"></i>
+          <span>La nuova frontiera dei pagamenti tra amici</span>
+        </div>
+
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] text-white">
+          Dividere il conto non è mai stato così <span class="bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">immediato.</span>
+        </h1>
+
+        <p class="text-base sm:text-lg text-zinc-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+          Basta chiedere lunghi IBAN o supplicare gli amici di scaricare l'ennesima applicazione. Scegli l'importo, fai uno <strong>swipe</strong> e passa la richiesta via <strong>AirDrop</strong> o <strong>NFC</strong>.
+        </p>
+
+        <!-- Feature Pills -->
+        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2 text-xs font-mono text-zinc-400">
+          <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/5">
+            <i class="fa-solid fa-check text-emerald-400"></i> Zero app per chi paga
+          </span>
+          <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/5">
+            <i class="fa-solid fa-check text-emerald-400"></i> Apple Pay & Revolut
+          </span>
+          <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/5">
+            <i class="fa-solid fa-check text-emerald-400"></i> Bonifico Istantaneo a 0 commissioni
+          </span>
+        </div>
+
+        <!-- Quick CTA Buttons -->
+        <div class="flex items-center justify-center lg:justify-start gap-4 pt-2">
+          <a href="#terminalSection" class="px-6 py-3.5 rounded-2xl bg-white text-black font-extrabold text-sm hover:bg-zinc-200 transition shadow-[0_0_25px_rgba(255,255,255,0.2)] active:scale-95">
+            Apri il Terminale
+          </a>
+          <button id="btnScrollHowItWorks" class="px-5 py-3.5 rounded-2xl glass-card hover:bg-white/10 text-zinc-300 text-sm font-semibold transition active:scale-95">
+            Guarda come funziona
+          </button>
+        </div>
+      </div>
+
+      <!-- LIVE WEB TERMINAL WIDGET -->
+      <div id="terminalSection" class="lg:col-span-5 w-full max-w-sm mx-auto">
+        
+        <div class="glass-card-interactive rounded-[2.5rem] p-5 relative overflow-hidden">
+          
+          <!-- Top Widget Header -->
+          <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></span>
+              <span class="text-[11px] font-mono uppercase tracking-wider text-zinc-300 font-bold">TERMINALE FLASHDROP</span>
+            </div>
+            <button id="terminalSettingsBtn" class="text-zinc-400 hover:text-white text-xs font-mono flex items-center gap-1 transition">
+              <i class="fa-solid fa-wallet text-blue-400"></i>
+              <span id="widgetAccountTag">@mario</span>
+            </button>
+          </div>
+
+          <!-- SELEZIONE DESTINATARIO RAPIDO -->
+          <div class="mb-4">
+            <div class="flex items-center justify-between text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-2">
+              <span>Destinatario Quota:</span>
+              <button id="quickAddPeerBtn" class="text-blue-400 hover:underline">+ Aggiungi</button>
+            </div>
+            
+            <div id="widgetPeerList" class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <!-- Renderizzato via JS -->
+            </div>
+          </div>
+
+          <!-- SELEZIONE IMPORTO -->
+          <div class="text-center py-2 mb-2">
+            <span class="text-[10px] uppercase font-mono tracking-widest text-zinc-400 block mb-1">QUOTA DA TRASFERIRE</span>
+            
+            <div class="flex items-center justify-center gap-1 font-mono">
+              <span class="text-3xl text-zinc-400 font-semibold select-none">€</span>
+              <input 
+                type="number" 
+                id="mainAmountInput" 
+                value="15.00" 
+                step="0.50" 
+                min="0.50" 
+                max="2500"
+                class="w-40 text-4xl font-black text-center bg-transparent border-b-2 border-zinc-800 focus:border-blue-500 focus:outline-none text-white tracking-tight"
+              />
+            </div>
+
+            <!-- Importi Rapidi -->
+            <div class="flex items-center justify-center gap-1.5 mt-3">
+              <button class="quick-amt px-2.5 py-1 rounded-xl glass-card text-xs font-mono text-zinc-300 hover:border-blue-500 transition" data-val="5.00">€5</button>
+              <button class="quick-amt px-2.5 py-1 rounded-xl glass-card text-xs font-mono text-zinc-300 hover:border-blue-500 transition" data-val="10.00">€10</button>
+              <button class="quick-amt px-2.5 py-1 rounded-xl bg-blue-600/30 border border-blue-500 text-xs font-mono text-blue-400 font-bold" data-val="15.00">€15</button>
+              <button class="quick-amt px-2.5 py-1 rounded-xl glass-card text-xs font-mono text-zinc-300 hover:border-blue-500 transition" data-val="25.00">€25</button>
+              <button class="quick-amt px-2.5 py-1 rounded-xl glass-card text-xs font-mono text-zinc-300 hover:border-blue-500 transition" data-val="50.00">€50</button>
+            </div>
+
+            <!-- Causali con Emoji -->
+            <div class="flex items-center justify-center gap-1 mt-2.5">
+              <button class="reason-btn px-2.5 py-0.5 rounded-lg bg-blue-600/20 border border-blue-500 text-white text-[11px] font-mono" data-r="🍕 Pizza">🍕 Pizza</button>
+              <button class="reason-btn px-2.5 py-0.5 rounded-lg glass-card text-zinc-300 text-[11px] font-mono hover:text-white" data-r="🍻 Birra">🍻 Birra</button>
+              <button class="reason-btn px-2.5 py-0.5 rounded-lg glass-card text-zinc-300 text-[11px] font-mono hover:text-white" data-r="☕ Caffè">☕ Caffè</button>
+              <button class="reason-btn px-2.5 py-0.5 rounded-lg glass-card text-zinc-300 text-[11px] font-mono hover:text-white" data-r="🎁 Regalo">🎁 Regalo</button>
+            </div>
+          </div>
+
+          <!-- SWIPE TRACK PER AIRDROP -->
+          <div class="space-y-2.5 pt-2">
+            
+            <div id="swipeTrack" class="relative w-full h-14 bg-black/60 border border-zinc-800 rounded-2xl p-1 flex items-center overflow-hidden select-none touch-none shadow-inner">
+              <div id="swipeProgress" class="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-40 rounded-2xl w-0 pointer-events-none transition-all duration-75"></div>
+
+              <div id="swipeLabel" class="absolute inset-0 flex items-center justify-center pointer-events-none pl-10 pr-2">
+                <span class="text-[11px] font-black uppercase tracking-wider swipe-text-shimmer font-mono flex items-center gap-1.5">
+                  <span>SCORRI PER INVIARE CON AIRDROP</span>
+                  <i class="fa-solid fa-angles-right text-[9px] animate-pulse"></i>
+                </span>
+              </div>
+
+              <div id="swipeThumb" class="relative z-10 w-12 h-12 rounded-xl bg-white text-black flex items-center justify-center shadow-md cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-transform duration-100">
+                <i class="fa-solid fa-share-nodes text-base text-blue-600"></i>
+              </div>
+            </div>
+
+            <!-- Alternative: Mostra QR & Scrivi NFC -->
+            <div class="grid grid-cols-2 gap-2">
+              <button id="showQrBtn" class="py-2 px-3 rounded-xl glass-card hover:bg-white/10 active:scale-95 transition flex items-center justify-center gap-1.5 text-xs font-semibold text-zinc-200">
+                <i class="fa-solid fa-qrcode text-blue-400"></i>
+                <span>Mostra QR</span>
+              </button>
+              <button id="openNfcBtn" class="py-2 px-3 rounded-xl glass-card hover:bg-white/10 active:scale-95 transition flex items-center justify-center gap-1.5 text-xs font-semibold text-zinc-200">
+                <i class="fa-solid fa-wave-square text-amber-400"></i>
+                <span>Tag NFC</span>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Bottom hint -->
+          <div class="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+            <span>Rails: SEPA Inst • Apple Pay • Revolut</span>
+            <span class="text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-shield-halved"></i> Prossimità</span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== SEZIONE 1: COME FUNZIONA IN 3 PASSI ==================== -->
+  <section id="come-funziona" class="py-20 px-4 border-t border-white/5 bg-[#08080c]">
+    <div class="max-w-5xl mx-auto">
+      
+      <div class="text-center max-w-2xl mx-auto mb-14">
+        <span class="text-xs font-mono text-blue-400 uppercase tracking-widest font-bold">FLUSSO ISTANTANEO</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold mt-2 text-white">Come funziona FlashDrop in 3 tocchi</h2>
+        <p class="text-sm text-zinc-400 mt-2">Nessun intermediario complicato. Sfrutti l'hardware che hai già in tasca.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Step 1 -->
+        <div class="p-6 rounded-3xl glass-card relative group hover:border-blue-500/40 transition">
+          <div class="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-lg font-mono font-bold mb-4">
+            01
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Connetti una volta sola</h3>
+          <p class="text-xs text-zinc-400 leading-relaxed">
+            Inserisci il tuo IBAN o il tuo tag Revolut nelle impostazioni. Verranno memorizzati in locale nel tuo browser per tutti i tuoi futuri scambi.
+          </p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="p-6 rounded-3xl glass-card relative group hover:border-indigo-500/40 transition">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-lg font-mono font-bold mb-4">
+            02
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Fai swipe con AirDrop</h3>
+          <p class="text-xs text-zinc-400 leading-relaxed">
+            Seleziona l'importo (es. 15€ pizza) e trascina lo slider. Si apre direttamente il menu di condivisione di iOS: tocca l'iPhone del tuo amico su AirDrop.
+          </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="p-6 rounded-3xl glass-card relative group hover:border-emerald-500/40 transition">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-lg font-mono font-bold mb-4">
+            03
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Lui tocca e il conto è chiuso</h3>
+          <p class="text-xs text-zinc-400 leading-relaxed">
+            Al tuo amico si apre la schermata nel browser: paga con Apple Pay, con Revolut o con Bonifico Istantaneo inquadrando il QR. I soldi arrivano subito a te.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== SEZIONE 2: CONNETTI IL TUO CONTO ==================== -->
+  <section id="connetti-conto" class="py-20 px-4 border-t border-white/5">
+    <div class="max-w-4xl mx-auto">
+      
+      <div class="p-8 sm:p-10 rounded-3xl glass-card border-white/10 relative overflow-hidden">
+        <div class="max-w-xl">
+          <span class="text-xs font-mono text-emerald-400 uppercase tracking-widest font-bold">COLLEGAMENTO RAPIDO</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2 mb-3">Connetti i tuoi dati di incasso</h2>
+          <p class="text-xs sm:text-sm text-zinc-400 mb-6 leading-relaxed">
+            Imposta dove vuoi ricevere i pagamenti dei tuoi amici. Questi dati verranno inseriti istantaneamente nei link AirDrop e nei QR generati.
+          </p>
+
+          <form id="landingAccountForm" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Il tuo Nome / Soprannome</label>
+                <input type="text" id="landingNameInput" value="Mario Rossi" class="w-full bg-black/60 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+              </div>
+
+              <div>
+                <label class="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Il tuo Username (@tag)</label>
+                <input type="text" id="landingTagInput" value="@mario" class="w-full bg-black/60 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Tuo IBAN (per Bonifici Istantanei SEPA EPC)</label>
+              <input type="text" id="landingIbanInput" value="IT89B0306909606100000012345" class="w-full bg-black/60 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Username Revolut (revolut.me/)</label>
+                <input type="text" id="landingRevolutInput" value="mariorossi" class="w-full bg-black/60 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-blue-400 font-mono focus:outline-none focus:border-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Username PayPal (paypal.me/)</label>
+                <input type="text" id="landingPaypalInput" value="mariorossi" class="w-full bg-black/60 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-sky-400 font-mono focus:outline-none focus:border-sky-500">
+              </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-between">
+              <button type="submit" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold text-xs uppercase tracking-wider transition active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                Salva e Connetti
+              </button>
+              <span id="savedConfirmMsg" class="text-xs font-mono text-emerald-400 hidden">✓ Connesso con successo</span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== SEZIONE 3: PERCHÉ FLASHDROP (VANTAGGI) ==================== -->
+  <section id="vantaggi" class="py-20 px-4 border-t border-white/5 bg-[#08080c]">
+    <div class="max-w-5xl mx-auto">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div>
+          <span class="text-xs font-mono text-blue-400 uppercase tracking-widest font-bold">ZERO FRIZIONI</span>
+          <h2 class="text-3xl font-extrabold text-white mt-2 mb-4">Perché è meglio di qualsiasi altra app</h2>
+          <div class="space-y-4 text-xs text-zinc-400">
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fa-solid fa-check text-xs"></i></div>
+              <p><strong class="text-white">Nessun portafoglio bloccato:</strong> Non devi ricaricare wallet interni e aspettare 3 giorni per ritirare i soldi: finiscono direttamente sul tuo conto o carta.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fa-solid fa-check text-xs"></i></div>
+              <p><strong class="text-white">Nessuna registrazione per gli amici:</strong> Chi riceve la richiesta non deve inserire password, confermare email o installare niente. Il link si apre direttamente in Safari.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fa-solid fa-check text-xs"></i></div>
+              <p><strong class="text-white">Prossimità fisica reale:</strong> Sfrutti AirDrop e la vicinanza del tavolo per evitare di cercare contatti o sbagliare IBAN.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 rounded-3xl glass-card border-white/10 text-center font-mono">
+          <div class="text-5xl font-black text-white mb-2">1.0s</div>
+          <div class="text-xs text-zinc-400 uppercase tracking-wider mb-6">Tempo medio per saldare un conto</div>
+          <div class="p-4 rounded-2xl bg-black/60 border border-zinc-800 text-left text-xs space-y-2">
+            <div class="flex justify-between text-zinc-400"><span>Cena pizzeria:</span><span class="text-white">€18.50 a testa</span></div>
+            <div class="flex justify-between text-zinc-400"><span>Modalità:</span><span class="text-blue-400 font-bold">AirDrop Beam</span></div>
+            <div class="flex justify-between text-zinc-400"><span>Tempo impiegato:</span><span class="text-emerald-400 font-bold">Uno Swipe</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="py-10 px-4 border-t border-white/5 bg-black text-zinc-500 text-xs font-mono">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="text-white font-bold">FlashDrop</span> • Scambio denaro istantaneo P2P tra amici
+      </div>
+      <div>
+        Compatibile con iOS AirDrop, Apple Pay, Revolut & SEPA Instant EPC
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== MODALI & POPUP INTERATTIVI ==================== -->
+
+  <!-- MODALE SALDA RICHIESTA RICEVUTA (QUANDO APERTO DA AIRDROP) -->
+  <div id="receiverModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-3xl glass-card-interactive p-6 text-center text-white relative border border-zinc-700/80 shadow-2xl">
+      <button id="closeReceiverModalBtn" class="absolute top-4 right-4 w-7 h-7 rounded-full bg-zinc-900 text-zinc-400 hover:text-white flex items-center justify-center">
+        <i class="fa-solid fa-xmark text-xs"></i>
+      </button>
+
+      <div class="w-14 h-14 rounded-2xl bg-blue-600/25 border border-blue-500/40 text-blue-400 flex items-center justify-center text-2xl mx-auto mb-3 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+        <i class="fa-solid fa-hand-holding-dollar"></i>
+      </div>
+
+      <span class="text-[10px] uppercase font-mono tracking-widest text-blue-400 font-bold block mb-1">RICHIESTA AIRDROP RICEVUTA</span>
+      <h3 class="text-lg font-bold text-white mb-0.5" id="rxModalSenderName">Mario (@mario)</h3>
+      <p class="text-xs text-zinc-400 mb-3" id="rxModalReason">Causale: 🍕 Pizza</p>
+
+      <div class="text-4xl font-black font-mono text-white mb-4 tracking-tight" id="rxModalAmount">
+        € 15.00
+      </div>
+
+      <div class="space-y-2 mb-4">
+        <!-- Paga con Apple Pay -->
+        <button id="btnRxApplePay" class="w-full py-3.5 bg-white text-black hover:bg-zinc-200 active:scale-95 transition rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg">
+          <i class="fa-brands fa-apple text-base"></i>
+          <span>Paga con Apple Pay</span>
+        </button>
+
+        <!-- Bonifico Istantaneo con App Banca -->
+        <button id="btnRxSepa" class="w-full py-3 bg-zinc-900 border border-zinc-700 hover:border-emerald-500 active:scale-95 transition rounded-2xl font-bold text-xs text-white flex items-center justify-center gap-2">
+          <i class="fa-solid fa-building-columns text-emerald-400 text-xs"></i>
+          <span>Bonifico Istantaneo (EPC QR)</span>
+        </button>
+
+        <!-- Revolut & PayPal -->
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnRxRevolut" class="py-2.5 px-2 bg-zinc-900 border border-zinc-800 hover:border-blue-500 rounded-xl text-[11px] font-mono text-zinc-200 flex items-center justify-center gap-1.5 active:scale-95 transition">
+            <i class="fa-solid fa-bolt text-blue-400"></i>
+            <span>Revolut.me</span>
+          </button>
+          <button id="btnRxPaypal" class="py-2.5 px-2 bg-zinc-900 border border-zinc-800 hover:border-blue-500 rounded-xl text-[11px] font-mono text-zinc-200 flex items-center justify-center gap-1.5 active:scale-95 transition">
+            <i class="fa-brands fa-paypal text-sky-400"></i>
+            <span>PayPal.me</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="text-[10px] text-zinc-500 font-mono">Zero commissioni per chi invia la quota.</p>
+    </div>
+  </div>
+
+  <!-- MODALE MOSTRA QR CODE -->
+  <div id="qrModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-3xl glass-card-interactive p-5 text-white">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+        <div class="flex items-center gap-2 font-mono text-xs font-bold uppercase">
+          <i class="fa-solid fa-qrcode text-blue-400"></i>
+          <span>QR Code & Link Rapido</span>
+        </div>
+        <button id="closeQrModalBtn" class="w-7 h-7 rounded-full bg-zinc-900 text-zinc-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-zinc-400 mb-3">Fai inquadrare con la fotocamera per aprire la richiesta:</p>
+
+      <div class="flex justify-center p-3 bg-white rounded-2xl mx-auto w-fit mb-3 shadow-lg">
+        <div id="qrCanvasBox"></div>
+      </div>
+
+      <div class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-xl p-2 mb-3">
+        <input type="text" id="shareUrlInput" readonly class="flex-1 bg-transparent text-xs text-zinc-300 font-mono focus:outline-none truncate">
+        <button id="copyShareBtn" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold font-mono text-white transition active:scale-95">
+          Copia
+        </button>
+      </div>
+
+      <button id="triggerAirDropModalBtn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-xs uppercase font-mono text-white transition active:scale-95 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-share-nodes"></i>
+        <span>Apri Menu AirDrop</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODALE SEPA INSTANT EPC QR -->
+  <div id="sepaModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-3xl glass-card-interactive p-5 text-white">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+        <div class="flex items-center gap-2 font-mono text-xs font-bold uppercase text-emerald-400">
+          <i class="fa-solid fa-building-columns"></i>
+          <span>Bonifico Istantaneo SEPA</span>
+        </div>
+        <button id="closeSepaModalBtn" class="w-7 h-7 rounded-full bg-zinc-900 text-zinc-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-zinc-400 mb-3">Inquadra con l'app della tua banca (Intesa, UniCredit, Revolut, BBVA) per bonifico a 0 commissioni:</p>
+
+      <div class="flex justify-center p-3 bg-white rounded-2xl mx-auto w-fit mb-3 shadow-lg">
+        <div id="sepaQrBox"></div>
+      </div>
+
+      <div class="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-left font-mono text-[11px] text-zinc-300 space-y-1 mb-3">
+        <div>Beneficiario: <span class="text-white font-bold" id="sepaBeneficiaryText">Mario Rossi</span></div>
+        <div class="truncate">IBAN: <span class="text-emerald-400 font-bold" id="sepaIbanText">IT89B030690...</span></div>
+        <div>Importo: <span class="text-white font-bold" id="sepaAmountText">€ 15.00</span></div>
+      </div>
+
+      <button id="copyIbanBtn" class="w-full py-2.5 bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-xl font-bold text-xs font-mono text-zinc-200 transition">
+        Copia Solo IBAN
+      </button>
+    </div>
+  </div>
+
+  <!-- OVERLAY CONFERMA TRANSAZIONE -->
+  <div id="successOverlay" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl hidden flex flex-col items-center justify-center p-6 text-center">
+    <div class="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 text-3xl shadow-[0_0_40px_rgba(16,185,129,0.7)] animate-bounce mb-4">
+      <i class="fa-solid fa-check"></i>
+    </div>
+
+    <span class="text-[10px] uppercase font-mono tracking-widest text-emerald-400 font-bold mb-1">PAGAMENTO COMPLETATO</span>
+    <h2 class="text-2xl font-black text-white mb-1">Conto Saldato con Successo</h2>
+    <div class="text-4xl font-black font-mono text-white mb-4" id="successAmountDisplay">€ 15.00</div>
+
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-full max-w-xs text-left text-xs font-mono space-y-1.5 mb-5">
+      <div class="flex justify-between text-zinc-400"><span>Canale:</span><span class="text-white font-bold" id="successChannelText">AirDrop Link P2P</span></div>
+      <div class="flex justify-between text-zinc-400"><span>Causale:</span><span class="text-zinc-200" id="successReasonText">🍕 Pizza</span></div>
+      <div class="flex justify-between text-zinc-400"><span>Riferimento:</span><span class="text-zinc-400" id="successRefText">FD-839210</span></div>
+    </div>
+
+    <button id="dismissSuccessBtn" class="w-full max-w-xs py-3 bg-white text-black font-extrabold rounded-2xl text-xs uppercase font-mono hover:bg-zinc-200 transition">
+      Chiudi
+    </button>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900/90 border border-zinc-700/80 backdrop-blur-md px-4 py-2 rounded-full text-xs font-mono text-white shadow-2xl flex items-center gap-2 pointer-events-none opacity-0 transition-opacity duration-300">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMessage">Avviso</span>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Sintetizzatore sonoro Web Audio API
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function playTick() {
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(70, ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.06);
+      } catch (e) {}
+    }
+
+    function playChime() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+          gain.gain.setValueAtTime(0.2, now + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.06);
+          osc.stop(now + idx * 0.06 + 0.35);
+        });
+      } catch (e) {}
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById('toastNotification');
+      const msg = document.getElementById('toastMessage');
+      msg.textContent = text;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 2500);
+    }
+
+    // STATE
+    const PEERS = [
+      { id: 'alex', name: 'Alessandro', tag: '@alex_pay', initial: 'A' },
+      { id: 'elena', name: 'Elena', tag: '@elena_m', initial: 'E' },
+      { id: 'marco', name: 'Marco', tag: '@marco_f', initial: 'M' }
+    ];
+
+    let currentPeer = PEERS[0];
+    let selectedReason = "🍕 Pizza";
+
+    let userProfile = {
+      name: 'Mario Rossi',
+      tag: '@mario',
+      iban: 'IT89B0306909606100000012345',
+      revolut: 'mariorossi',
+      paypal: 'mariorossi'
+    };
+
+    // Load from localStorage if present
+    try {
+      const saved = localStorage.getItem('flashdrop_user_profile');
+      if (saved) userProfile = Object.assign(userProfile, JSON.parse(saved));
+    } catch(e) {}
+
+    let incomingData = null;
+
+    // DOM Elements
+    const widgetPeerList = document.getElementById('widgetPeerList');
+    const mainAmountInput = document.getElementById('mainAmountInput');
+    const quickAmts = document.querySelectorAll('.quick-amt');
+    const reasonBtns = document.querySelectorAll('.reason-btn');
+    const quickAddPeerBtn = document.getElementById('quickAddPeerBtn');
+    const navProfileNameDisplay = document.getElementById('navProfileNameDisplay');
+    const widgetAccountTag = document.getElementById('widgetAccountTag');
+
+    const swipeTrack = document.getElementById('swipeTrack');
+    const swipeThumb = document.getElementById('swipeThumb');
+    const swipeProgress = document.getElementById('swipeProgress');
+    const swipeLabel = document.getElementById('swipeLabel');
+
+    // Modals
+    const qrModal = document.getElementById('qrModal');
+    const showQrBtn = document.getElementById('showQrBtn');
+    const closeQrModalBtn = document.getElementById('closeQrModalBtn');
+    const qrCanvasBox = document.getElementById('qrCanvasBox');
+    const shareUrlInput = document.getElementById('shareUrlInput');
+    const copyShareBtn = document.getElementById('copyShareBtn');
+    const triggerAirDropModalBtn = document.getElementById('triggerAirDropModalBtn');
+
+    const sepaModal = document.getElementById('sepaModal');
+    const closeSepaModalBtn = document.getElementById('closeSepaModalBtn');
+    const sepaQrBox = document.getElementById('sepaQrBox');
+    const sepaBeneficiaryText = document.getElementById('sepaBeneficiaryText');
+    const sepaIbanText = document.getElementById('sepaIbanText');
+    const sepaAmountText = document.getElementById('sepaAmountText');
+    const copyIbanBtn = document.getElementById('copyIbanBtn');
+
+    const receiverModal = document.getElementById('receiverModal');
+    const closeReceiverModalBtn = document.getElementById('closeReceiverModalBtn');
+    const rxModalSenderName = document.getElementById('rxModalSenderName');
+    const rxModalReason = document.getElementById('rxModalReason');
+    const rxModalAmount = document.getElementById('rxModalAmount');
+    const btnRxApplePay = document.getElementById('btnRxApplePay');
+    const btnRxSepa = document.getElementById('btnRxSepa');
+    const btnRxRevolut = document.getElementById('btnRxRevolut');
+    const btnRxPaypal = document.getElementById('btnRxPaypal');
+
+    const successOverlay = document.getElementById('successOverlay');
+    const successAmountDisplay = document.getElementById('successAmountDisplay');
+    const successChannelText = document.getElementById('successChannelText');
+    const successReasonText = document.getElementById('successReasonText');
+    const successRefText = document.getElementById('successRefText');
+    const dismissSuccessBtn = document.getElementById('dismissSuccessBtn');
+
+    // Account Form
+    const landingAccountForm = document.getElementById('landingAccountForm');
+    const landingNameInput = document.getElementById('landingNameInput');
+    const landingTagInput = document.getElementById('landingTagInput');
+    const landingIbanInput = document.getElementById('landingIbanInput');
+    const landingRevolutInput = document.getElementById('landingRevolutInput');
+    const landingPaypalInput = document.getElementById('landingPaypalInput');
+    const savedConfirmMsg = document.getElementById('savedConfirmMsg');
+    const openAccountDrawerBtn = document.getElementById('openAccountDrawerBtn');
+    const terminalSettingsBtn = document.getElementById('terminalSettingsBtn');
+    const btnScrollHowItWorks = document.getElementById('btnScrollHowItWorks');
+
+    // Render Peers
+    function renderPeers() {
+      widgetPeerList.innerHTML = '';
+      PEERS.forEach(peer => {
+        const isSel = peer.id === currentPeer.id;
+        const btn = document.createElement('button');
+        btn.className = `flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono transition border ${
+          isSel ? 'bg-blue-600/30 border-blue-500 text-white font-bold' : 'glass-card border-white/5 text-zinc-400 hover:text-white'
+        }`;
+        btn.innerHTML = `
+          <span class="w-5 h-5 rounded-full ${isSel ? 'bg-blue-500 text-white' : 'bg-zinc-800 text-zinc-300'} flex items-center justify-center text-[10px] font-bold">${peer.initial}</span>
+          <span>${peer.name}</span>
+        `;
+        btn.onclick = () => {
+          currentPeer = peer;
+          renderPeers();
+          playTick();
+        };
+        widgetPeerList.appendChild(btn);
+      });
+    }
+
+    function syncProfileUI() {
+      navProfileNameDisplay.textContent = userProfile.name.split(' ')[0];
+      widgetAccountTag.textContent = userProfile.tag;
+      landingNameInput.value = userProfile.name;
+      landingTagInput.value = userProfile.tag;
+      landingIbanInput.value = userProfile.iban;
+      landingRevolutInput.value = userProfile.revolut;
+      landingPaypalInput.value = userProfile.paypal;
+    }
+
+    // URL Generator
+    function buildShareUrl() {
+      const amt = parseFloat(mainAmountInput.value) || 15.00;
+      const ref = 'FD-' + Math.floor(100000 + Math.random() * 900000);
+      const url = new URL(window.location.origin + window.location.pathname);
+      url.searchParams.set('action', 'receive');
+      url.searchParams.set('from', userProfile.name);
+      url.searchParams.set('fromTag', userProfile.tag);
+      url.searchParams.set('amount', amt.toFixed(2));
+      url.searchParams.set('reason', selectedReason);
+      url.searchParams.set('iban', userProfile.iban);
+      url.searchParams.set('revolut', userProfile.revolut);
+      url.searchParams.set('paypal', userProfile.paypal);
+      url.searchParams.set('ref', ref);
+      return url.toString();
+    }
+
+    // EPC-QR for SEPA Instant
+    function buildEpcPayload(beneficiary, iban, amount, ref) {
+      return [
+        "BCD", "002", "1", "SCT", "",
+        (beneficiary || "FlashDrop").substring(0, 70),
+        (iban || "").replace(/\s+/g, '').toUpperCase(),
+        `EUR${parseFloat(amount).toFixed(2)}`,
+        "", (ref || "FD-TRANSFER").substring(0, 35),
+        "FlashDrop P2P"
+      ].join("\n");
+    }
+
+    // Swipe Slider Logic
+    let isDragging = false, startX = 0, currentX = 0, maxDistance = 0;
+    function initSwipe() {
+      const getX = (e) => e.touches ? e.touches[0].clientX : e.clientX;
+
+      const onStart = (e) => {
+        isDragging = true;
+        startX = getX(e);
+        const tr = swipeTrack.getBoundingClientRect();
+        const th = swipeThumb.getBoundingClientRect();
+        maxDistance = tr.width - th.width - 8;
+        swipeThumb.style.transition = 'none';
+        swipeProgress.style.transition = 'none';
+        playTick();
+      };
+
+      const onMove = (e) => {
+        if (!isDragging) return;
+        const d = getX(e) - startX;
+        currentX = Math.max(0, Math.min(d, maxDistance));
+        swipeThumb.style.transform = `translateX(${currentX}px)`;
+        swipeProgress.style.width = `${currentX + 40}px`;
+        swipeLabel.style.opacity = `${Math.max(0.1, 1 - (currentX / maxDistance) * 1.5)}`;
+      };
+
+      const onEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        if (currentX >= maxDistance * 0.85) {
+          swipeThumb.style.transform = `translateX(${maxDistance}px)`;
+          swipeProgress.style.width = '100%';
+          playTick();
+          setTimeout(() => {
+            triggerAirDrop();
+            setTimeout(resetSwipe, 700);
+          }, 120);
+        } else {
+          resetSwipe();
+        }
+      };
+
+      function resetSwipe() {
+        swipeThumb.style.transition = 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        swipeProgress.style.transition = 'width 0.25s ease';
+        swipeThumb.style.transform = 'translateX(0px)';
+        swipeProgress.style.width = '0px';
+        swipeLabel.style.opacity = '1';
+        currentX = 0;
+      }
+
+      swipeThumb.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+
+      swipeThumb.addEventListener('touchstart', onStart, { passive: true });
+      window.addEventListener('touchmove', onMove, { passive: true });
+      window.addEventListener('touchend', onEnd);
+    }
+
+    // Trigger AirDrop
+    async function triggerAirDrop() {
+      const url = buildShareUrl();
+      const amt = parseFloat(mainAmountInput.value) || 15.00;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `FlashDrop: €${amt.toFixed(2)}`,
+            text: `Tocca per saldare €${amt.toFixed(2)} per ${selectedReason} su FlashDrop.`,
+            url: url
+          });
+          triggerSuccessOverlay("AirDrop Inviato");
+        } catch (err) {
+          openQrModal(url);
+        }
+      } else {
+        openQrModal(url);
+      }
+    }
+
+    function openQrModal(url) {
+      shareUrlInput.value = url;
+      qrCanvasBox.innerHTML = '';
+      new QRCode(qrCanvasBox, {
+        text: url,
+        width: 170,
+        height: 170,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      qrModal.classList.remove('hidden');
+    }
+
+    function triggerSuccessOverlay(channel = "AirDrop P2P") {
+      playChime();
+      const amt = parseFloat(mainAmountInput.value) || 15.00;
+      successAmountDisplay.textContent = `€ ${amt.toFixed(2)}`;
+      successChannelText.textContent = channel;
+      successReasonText.textContent = selectedReason;
+      successRefText.textContent = 'FD-' + Math.floor(100000 + Math.random() * 900000);
+
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+      }
+      successOverlay.classList.remove('hidden');
+    }
+
+    // Amount & Reason Handlers
+    quickAmts.forEach(btn => {
+      btn.addEventListener('click', () => {
+        quickAmts.forEach(b => {
+          b.className = 'quick-amt px-2.5 py-1 rounded-xl glass-card text-xs font-mono text-zinc-300 hover:border-blue-500 transition';
+        });
+        btn.className = 'quick-amt px-2.5 py-1 rounded-xl bg-blue-600/30 border border-blue-500 text-xs font-mono text-blue-400 font-bold';
+        mainAmountInput.value = btn.dataset.val;
+        playTick();
+      });
+    });
+
+    reasonBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        reasonBtns.forEach(b => {
+          b.className = 'reason-btn px-2.5 py-0.5 rounded-lg glass-card text-zinc-300 text-[11px] font-mono hover:text-white';
+        });
+        btn.className = 'reason-btn px-2.5 py-0.5 rounded-lg bg-blue-600/20 border border-blue-500 text-white text-[11px] font-mono';
+        selectedReason = btn.dataset.r;
+        playTick();
+      });
+    });
+
+    quickAddPeerBtn.addEventListener('click', () => {
+      const name = prompt("Nome dell'amico (es. Sofia):");
+      if (name && name.trim()) {
+        const clean = name.trim();
+        const p = {
+          id: 'custom_' + Date.now(),
+          name: clean,
+          tag: `@${clean.toLowerCase()}`,
+          initial: clean[0].toUpperCase()
+        };
+        PEERS.unshift(p);
+        currentPeer = p;
+        renderPeers();
+        playTick();
+      }
+    });
+
+    // Account Form Save
+    landingAccountForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      userProfile.name = landingNameInput.value.trim() || userProfile.name;
+      userProfile.tag = landingTagInput.value.trim() || userProfile.tag;
+      userProfile.iban = landingIbanInput.value.trim() || userProfile.iban;
+      userProfile.revolut = landingRevolutInput.value.trim() || userProfile.revolut;
+      userProfile.paypal = landingPaypalInput.value.trim() || userProfile.paypal;
+
+      try {
+        localStorage.setItem('flashdrop_user_profile', JSON.stringify(userProfile));
+      } catch(e) {}
+
+      syncProfileUI();
+      savedConfirmMsg.classList.remove('hidden');
+      setTimeout(() => savedConfirmMsg.classList.add('hidden'), 2500);
+      showToast("Dati conto salvati con successo");
+      playTick();
+    });
+
+    // Modal Triggers
+    showQrBtn.addEventListener('click', () => {
+      playTick();
+      openQrModal(buildShareUrl());
+    });
+
+    closeQrModalBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
+
+    copyShareBtn.addEventListener('click', () => {
+      shareUrlInput.select();
+      document.execCommand('copy');
+      copyShareBtn.textContent = "Fatto!";
+      showToast("Link copiato negli appunti");
+      setTimeout(() => copyShareBtn.textContent = "Copia", 1500);
+    });
+
+    triggerAirDropModalBtn.addEventListener('click', () => {
+      qrModal.classList.add('hidden');
+      triggerAirDrop();
+    });
+
+    document.getElementById('openNfcBtn').addEventListener('click', () => {
+      showToast("Avvicina il tag NFC per memorizzare il link...");
+      playTick();
+    });
+
+    // Nav smooth scroll & drawer buttons
+    openAccountDrawerBtn.addEventListener('click', () => {
+      document.getElementById('connetti-conto').scrollIntoView({ behavior: 'smooth' });
+    });
+    terminalSettingsBtn.addEventListener('click', () => {
+      document.getElementById('connetti-conto').scrollIntoView({ behavior: 'smooth' });
+    });
+    btnScrollHowItWorks.addEventListener('click', () => {
+      document.getElementById('come-funziona').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    dismissSuccessBtn.addEventListener('click', () => successOverlay.classList.add('hidden'));
+
+    // Receiver Modal Handlers
+    closeReceiverModalBtn.addEventListener('click', () => receiverModal.classList.add('hidden'));
+
+    btnRxApplePay.addEventListener('click', async () => {
+      if (window.PaymentRequest) {
+        try {
+          const req = new PaymentRequest(
+            [{ supportedMethods: 'basic-card' }],
+            { total: { label: 'FlashDrop: ' + (incomingData?.reason || 'Quota'), amount: { currency: 'EUR', value: incomingData?.amount || '15.00' } } }
+          );
+          const res = await req.show();
+          await res.complete('success');
+          receiverModal.classList.add('hidden');
+          triggerSuccessOverlay("Apple Pay");
+          return;
+        } catch(e) {}
+      }
+      showToast("Autorizzazione Apple Pay completata");
+      setTimeout(() => {
+        receiverModal.classList.add('hidden');
+        triggerSuccessOverlay("Apple Pay Biometrico");
+      }, 500);
+    });
+
+    btnRxSepa.addEventListener('click', () => {
+      receiverModal.classList.add('hidden');
+      const b = incomingData?.from || userProfile.name;
+      const ib = incomingData?.iban || userProfile.iban;
+      const amt = incomingData?.amount || "15.00";
+      const rf = incomingData?.ref || "FD-EPC-01";
+
+      sepaBeneficiaryText.textContent = b;
+      sepaIbanText.textContent = ib;
+      sepaAmountText.textContent = `€ ${amt}`;
+
+      sepaQrBox.innerHTML = '';
+      new QRCode(sepaQrBox, {
+        text: buildEpcPayload(b, ib, amt, rf),
+        width: 170,
+        height: 170,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      sepaModal.classList.remove('hidden');
+      playTick();
+    });
+
+    closeSepaModalBtn.addEventListener('click', () => sepaModal.classList.add('hidden'));
+
+    copyIbanBtn.addEventListener('click', () => {
+      const el = document.createElement('textarea');
+      el.value = sepaIbanText.textContent;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast("IBAN copiato!");
+    });
+
+    btnRxRevolut.addEventListener('click', () => {
+      const tag = incomingData?.revolut || userProfile.revolut;
+      const amt = incomingData?.amount || "15";
+      window.open(`https://revolut.me/${tag}/${amt}`, '_blank');
+    });
+
+    btnRxPaypal.addEventListener('click', () => {
+      const tag = incomingData?.paypal || userProfile.paypal;
+      const amt = incomingData?.amount || "15";
+      window.open(`https://paypal.me/${tag}/${amt}`, '_blank');
+    });
+
+    // Check URL Params (Receiver Mode)
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPeers();
+      syncProfileUI();
+      initSwipe();
+
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      const from = params.get('from');
+      const amount = params.get('amount');
+
+      if (action === 'receive' || (from && amount)) {
+        incomingData = {
+          from: from || 'Un tuo amico',
+          fromTag: params.get('fromTag') || '@amico',
+          amount: parseFloat(amount || '15.00').toFixed(2),
+          reason: params.get('reason') || '🍕 Pizza',
+          iban: params.get('iban') || userProfile.iban,
+          revolut: params.get('revolut') || userProfile.revolut,
+          paypal: params.get('paypal') || userProfile.paypal,
+          ref: params.get('ref') || ('FD-' + Math.floor(100000 + Math.random() * 900000))
+        };
+
+        // Mostra banner in alto
+        document.getElementById('incomingRequestBanner').classList.remove('hidden');
+        document.getElementById('bannerSenderName').textContent = incomingData.from;
+        document.getElementById('bannerAmount').textContent = `€${incomingData.amount}`;
+
+        // Popola modale
+        rxModalSenderName.textContent = `${incomingData.from} (${incomingData.fromTag})`;
+        rxModalReason.textContent = `Causale: ${incomingData.reason}`;
+        rxModalAmount.textContent = `€ ${incomingData.amount}`;
+
+        document.getElementById('jumpToPayBtn').onclick = () => {
+          receiverModal.classList.remove('hidden');
+          playTick();
+        };
+
+        // Apri subito il modale per saldare
+        setTimeout(() => {
+          receiverModal.classList.remove('hidden');
+          playChime();
+        }, 400);
+      }
+    });
+  </script>
+</body>
+</html>
